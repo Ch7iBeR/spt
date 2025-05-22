@@ -469,4 +469,4 @@ def get_session_details():
         return jsonify({'status': 'error', 'message': 'Session not found'})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0',debug=True)
