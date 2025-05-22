@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h2> Bonjour, {{ admin_name }}</h2>
+    
+    <div class="dashboard-header">
+        <a href="{{ url_for('add_user') }}" class="btn btn-primary">
+            <i class="fas fa-user-plus"></i> Ajouter Tireur
+        </a>
+    </div>
+    
+    <div class="users-table">
+        <h3>Liste des Tireurs</h3>
+        <div class="table-responsive">
+            <table id="users-table">
+                <thead>
+                    <tr>
+                        <th>Matricule</th>
+                        <th>NOM</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.matricule }}</td>
+                        <td>{{ user.full_name }}</td>
+                        <td>
+                            <a href="{{ url_for('admin_user_dashboard', user_id=user.id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-eye"></i> Consulter Dashboard
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

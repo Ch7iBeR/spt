@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détection de tir</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <h1>Détection de tir</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i>Déconnexion</a>
+            </div>
+        </nav>
+
+    <div class="container">
+        <div class="detection-container">
+            <h2>Séance de tir</h2>
+            <h3 class="text-center mb-4">Utilisateur: {{ user_full_name }}</h3>
+
+            <!-- Champ pour entrer l'index ou l'URL/adresse IP de la caméra -->
+            <div class="detection-controls">
+                <div class="form-group">
+                    <label for="cameraInput">Entrez l'index de la caméra (ex. 0 pour webcam PC) ou l'URL/IP (ex. rtsp://192.168.1.1/stream)</label>
+                    <input type="text" id="cameraInput" class="form-control" placeholder="0 ou rtsp://adresse_ip/stream" value="0">
+                </div>
+            </div>
+
+            <div class="video-container">
+                <img id="videoFeed" src="{{ url_for('video_feed') }}" alt="Flux vidéo" style="display: none;">
+                <div class="stats">
+                    <p>Balles tirées: <span id="bulletsShot">0</span></p>
+                    <p>Balles Réussies: <span id="bulletsDetected">0</span></p>
+                </div>
+            </div>
+
+            <div class="detection-controls">
+                <div class="button-group">
+                    <input type="number" id="bulletsInput" class="form-control" placeholder="Nombre de balles tirées" min="0">
+                    <button id="startBtn" class="btn btn-primary">Démarrer Séance</button>
+                    <button id="stopBtn" class="btn btn-danger" disabled>Terminer Séance</button>
+                    <button id="saveBtn" class="btn btn-success" disabled>Enregistrer</button>
+                </div>
+            </div>
+
+            <!-- Conteneur pour la fiche de résultats -->
+            <div class="results-container" id="resultsContainer" style="display: none;">
+                <h3>Résultats de la séance</h3>
+                <div class="result-stats">
+                    <p><strong>Date:</strong> <span id="resultDate"></span></p>
+                    <p><strong>Balles tirées:</strong> <span id="resultBulletsShot"></span></p>
+                    <p><strong>Balles Réussies:</strong> <span id="resultBulletsDetected"></span></p>
+                    <p><strong>Précision:</strong> <span id="resultAccuracy"></span>%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const bulletsInput = document.getElementById('bulletsInput');
+        const bulletsShotSpan = document.getElementById('bulletsShot');
+        const bulletsDetectedSpan = document.getElementById('bulletsDetected');
+        const cameraInput = document.getElementById('cameraInput');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const videoFeed = document.getElementById('videoFeed');
+
+        // Écouter les mises à jour en temps réel
+        const eventSource = new EventSource('/detection_updates');
+        eventSource.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            bulletsShotSpan.textContent = data.shot;
+            bulletsDetectedSpan.textContent = data.detected;
+        };
+
+        // Mettre à jour la source de la caméra en temps réel lorsqu'elle change
+        cameraInput.addEventListener('input', function() {
+            const cameraSource = cameraInput.value.trim();
+
+            if (!cameraSource) {
+                alert('Veuillez entrer un index de caméra (ex. 0) ou une URL/IP (ex. rtsp://adresse_ip/stream).');
+                return;
+            }
+
+            // Envoyer la nouvelle source de caméra au serveur
+            fetch('/update_camera_source', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ camera_source: cameraSource })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('Source de caméra mise à jour:', cameraSource);
+                    // Si la détection est active, recharger le flux vidéo
+                    if (!startBtn.disabled) {
+                        videoFeed.src = videoFeed.src; // Forcer le rechargement du flux
+                    }
+                } else {
+                    alert('Erreur: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la mise à jour de la caméra:', error);
+            });
+        });
+
+        // Gestion des boutons
+        startBtn.addEventListener('click', function() {
+            const bulletsShot = parseInt(bulletsInput.value) || 0;
+            const cameraSource = cameraInput.value.trim();
+
+            if (!cameraSource) {
+                alert('Veuillez entrer un index de caméra (ex. 0) ou une URL/IP (ex. rtsp://adresse_ip/stream).');
+                return;
+            }
+
+            fetch('/start_detection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bullets_shot: bulletsShot, camera_source: cameraSource })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    saveBtn.disabled = true;
+                    bulletsInput.disabled = true;
+                    cameraInput.disabled = true;
+                    videoFeed.style.display = 'block';
+                } else {
+                    alert('Erreur: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors du démarrage de la détection.');
+            });
+        });
+
+        stopBtn.addEventListener('click', function() {
+            fetch('/stop_detection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    saveBtn.disabled = false;
+                    bulletsInput.disabled = false;
+                    cameraInput.disabled = false;
+                    videoFeed.style.display = 'none';
+                }
+            });
+        });
+
+        saveBtn.addEventListener('click', function() {
+            const bulletsShot = parseInt(bulletsShotSpan.textContent) || 0;
+            const bulletsDetected = parseInt(bulletsDetectedSpan.textContent) || 0;
+            const accuracy = (bulletsShot > 0) ? (bulletsDetected / bulletsShot) * 100 : 0;
+
+            // Sauvegarde automatique
+            fetch('/save_results', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    bullets_shot: bulletsShot, 
+                    bullets_detected: bulletsDetected
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const now = new Date().toLocaleString('fr-FR');
+                    // Afficher les résultats dans le conteneur
+                    showResults(now, bulletsShot, bulletsDetected, accuracy);
+                    // Réinitialiser après affichage
+                    saveBtn.disabled = true;
+                    bulletsShotSpan.textContent = '0';
+                    bulletsDetectedSpan.textContent = '0';
+                    bulletsInput.value = '';
+                    console.log('Sauvegarde réussie, résultats affichés');
+                } else {
+                    alert('Erreur: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de la sauvegarde:', error);
+                alert('Erreur lors de la sauvegarde des résultats.');
+            });
+        });
+
+        // Fonction pour afficher la fiche de résultats dans la page
+        function showResults(date, bulletsShot, bulletsDetected, accuracy) {
+            document.getElementById('resultDate').textContent = date;
+            document.getElementById('resultBulletsShot').textContent = bulletsShot;
+            document.getElementById('resultBulletsDetected').textContent = bulletsDetected;
+            document.getElementById('resultAccuracy').textContent = accuracy.toFixed(2);
+            resultsContainer.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

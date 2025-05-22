@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="panel">
+    <h2>Statistiques de {{ user[1] }} ({{ user[0] }})</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Balles tirées</th>
+                <th>Impacts</th>
+                <th>Précision</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for session in sessions %}
+            <tr>
+                <td>{{ session[0].strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>{{ session[1] }}</td>
+                <td>{{ session[2] }}</td>
+                <td>{{ "%.2f"|format(session[3]) }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <a href="{{ url_for('admin_dashboard') }}" class="btn">Retour</a>
+</div>
+{% endblock %}

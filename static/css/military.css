@@ -1,0 +1,221 @@
+:root {
+  --camo-dark: #2a3439;
+  --camo-medium: #4a5c6a;
+  --camo-light: #7a8c7d;
+  --highlight: #a3b18a;
+  --alert: #bc4749;
+  --text-light: #f8f9fa;
+  --text-dark: #212529;
+}
+
+body {
+  font-family: 'Courier New', monospace;
+  background-color: var(--camo-dark);
+  color: var(--text-light);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+/* Navigation */
+nav {
+  background-color: var(--camo-medium);
+  border-bottom: 2px solid var(--highlight);
+  padding: 10px 0;
+}
+
+nav .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+nav h1 {
+  color: var(--highlight);
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: 1px;
+}
+
+nav a {
+  color: var(--text-light);
+  text-decoration: none;
+  margin-left: 20px;
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 3px;
+  transition: all 0.3s;
+}
+
+nav a:hover {
+  background-color: var(--highlight);
+  color: var(--camo-dark);
+}
+
+/* Panels */
+.panel {
+  background-color: var(--camo-medium);
+  border: 1px solid var(--highlight);
+  border-radius: 0;
+  padding: 20px;
+  margin: 20px 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.panel h2 {
+  color: var(--highlight);
+  border-bottom: 1px solid var(--highlight);
+  padding-bottom: 10px;
+  margin-top: 0;
+}
+
+/* Boutons */
+.btn {
+  display: inline-block;
+  padding: 8px 15px;
+  background-color: var(--camo-light);
+  color: var(--text-light);
+  border: 1px solid var(--highlight);
+  border-radius: 0;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+.btn:hover {
+  background-color: var(--highlight);
+  color: var(--camo-dark);
+  border-color: var(--camo-light);
+}
+
+.btn-primary {
+  background-color: var(--highlight);
+  color: var(--camo-dark);
+}
+
+.btn-danger {
+  background-color: var(--alert);
+  color: var(--text-light);
+}
+
+.btn-success {
+  background-color: var(--highlight);
+  color: var(--camo-dark);
+}
+
+/* Tableaux */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+  font-size: 0.9rem;
+}
+
+th {
+  background-color: var(--camo-light);
+  color: var(--text-dark);
+  padding: 10px;
+  text-align: left;
+}
+
+td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--camo-light);
+}
+
+tr:nth-child(even) {
+  background-color: rgba(122, 140, 125, 0.2);
+}
+
+/* Formulaires */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: var(--highlight);
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--camo-light);
+  color: var(--text-light);
+  font-family: 'Courier New', monospace;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--highlight);
+  background-color: rgba(163, 177, 138, 0.2);
+}
+
+/* Alerts */
+.alert {
+  padding: 10px;
+  margin: 15px 0;
+  border-radius: 0;
+  border-left: 4px solid;
+}
+
+.alert-error {
+  background-color: rgba(188, 71, 73, 0.2);
+  border-left-color: var(--alert);
+  color: var(--alert);
+}
+
+.alert-success {
+  background-color: rgba(163, 177, 138, 0.2);
+  border-left-color: var(--highlight);
+  color: var(--highlight);
+}
+
+/* Status */
+.status-active {
+  color: var(--highlight);
+  font-weight: bold;
+}
+
+.status-inactive {
+  color: var(--alert);
+  font-weight: bold;
+}
+
+/* Auth */
+.auth-container {
+  max-width: 500px;
+  margin: 50px auto;
+  background-color: var(--camo-medium);
+  border: 1px solid var(--highlight);
+  padding: 30px;
+}
+
+.auth-container h2 {
+  text-align: center;
+  margin-top: 0;
+  color: var(--highlight);
+}
+
+/* Result card */
+.result-card {
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  margin: 20px 0;
+  border-left: 4px solid var(--highlight);
+}
+
+.result-card p {
+  margin: 10px 0;
+  font-size: 1.1rem;
+}

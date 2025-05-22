@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h2> {{ user.full_name }}!</h2>
+        {% if not is_admin %}
+        <a href="{{ url_for('detection') }}" class="btn btn-primary">
+            <i class="fas fa-bullseye"></i> New Session
+        </a>
+        {% endif %}
+    </div>
+    
+    <div class="stats-summary">
+        <div class="stat-card">
+            <div class="stat-icon bg-primary">
+                <i class="fas fa-bullseye"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ stats.total_shot or 0 }}</h3>
+                <p>Balles Totales Tirés</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon bg-success">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ stats.total_detected or 0 }}</h3>
+                <p>Balles Totales Réussites</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon bg-info">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ "%.2f"|format(stats.avg_accuracy*100 ) if stats.avg_accuracy else 0 }}%</h3>
+                <p>Precision</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="date-filter">
+        <h3>Filter par Date</h3>
+        <form id="date-filter-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="start-date">De:</label>
+                    <input type="date" id="start-date" name="start-date">
+                </div>
+                <div class="form-group">
+                    <label for="end-date">à:</label>
+                    <input type="date" id="end-date" name="end-date">
+                </div>
+                <button type="submit" class="btn btn-primary">Filtrer</button>
+                <button type="button" id="reset-filter" class="btn btn-outline">Annuler</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="chart-row">
+        <div class="chart-container">
+            <h3>Moyenne de précision</h3>
+            <canvas id="accuracyPieChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Précision pendant les séances</h3>
+            <canvas id="accuracyChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Balles Tirés vs Reussites</h3>
+            <canvas id="comparisonChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="sessions-table">
+        <h3>Historique</h3>
+        {% if sessions %}
+        <div class="table-responsive">
+            <table id="sessions-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Balles Tirés</th>
+                        <th>Bullets Reussites</th>
+                        <th>Precision</th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in sessions %}
+                    <tr>
+                        <td>{{ session.session_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ session.bullets_shot }}</td>
+                        <td>{{ session.bullets_detected }}</td>
+                        <td>
+                            <div class="progress">
+                                <div class="progress-bar" style="width: {{ (session.accuracy )*100 if session.accuracy else 0 }}%">
+                                    {{ "%.2f"|format(session.accuracy*100) if session.accuracy else 0 }}%
+                                </div>
+                            </div>
+                        </td>
+                       
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>Vide.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Session Details Modal -->
+
+
+<!-- Hidden elements with data for JavaScript -->
+<script id="session-data" type="application/json">
+    {{ sessions|tojson }}
+</script>
+<script id="avg-accuracy-data" type="text/plain">
+    {{ stats.avg_accuracy if stats.avg_accuracy is not none else 0 }}
+</script>
+
+<!-- Inclure les dépendances -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+<script>
+// Gestion du filtrage par date
+document.getElementById('date-filter-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    
+    fetch("{{ url_for('filter_sessions') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            start_date: startDate,
+            end_date: endDate,
+            user_id: {{ user.id }}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Mettre à jour le tableau
+        const tbody = document.querySelector('#sessions-table tbody');
+        tbody.innerHTML = '';
+        
+        if (data.sessions && data.sessions.length > 0) {
+            data.sessions.forEach(session => {
+                const accuracy = session.accuracy !== undefined ? session.accuracy : 0;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(session.session_date).toLocaleString()}</td>
+                    <td>${session.bullets_shot}</td>
+                    <td>${session.bullets_detected}</td>
+                    <td>
+                        <div class="progress">
+                            <div class="progress-bar" style="width: ${accuracy}%">
+                                ${accuracy.toFixed(2)}%
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline session-details" data-id="${session.id}">
+                            <i class="fas fa-info-circle"></i> Details
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5">No sessions found for this date range.</td></tr>';
+        }
+
+        // Calculer la nouvelle précision moyenne pour les sessions filtrées
+        const avgAccuracy = data.sessions && data.sessions.length > 0 ? 
+            data.sessions.reduce((sum, s) => sum + (s.accuracy || 0), 0) / data.sessions.length : 0;
+
+        // Mettre à jour les graphiques
+        initializeCharts(data.sessions || [], avgAccuracy*100);
+    })
+    .catch(error => {
+        console.error('Erreur lors du filtrage des sessions:', error);
+    });
+});
+
+// Réinitialiser le filtre
+document.getElementById('reset-filter').addEventListener('click', function() {
+    document.getElementById('start-date').value = '';
+    document.getElementById('end-date').value = '';
+    window.location.reload();
+});
+
+// Gestion de la modale des détails de session
+const modal = document.getElementById('session-modal');
+const closeModal = document.querySelector('.close-modal');
+
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('session-details')) {
+        const sessionId = e.target.getAttribute('data-id');
+        
+        fetch("{{ url_for('get_session_details') }}?id=" + sessionId + "&user_id={{ user.id }}")
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('session-details').innerHTML = `
+                    <p><strong>Date:</strong> ${new Date(data.session_date).toLocaleString()}</p>
+                    <p><strong>Bullets Shot:</strong> ${data.bullets_shot}</p>
+                    <p><strong>Bullets Detected:</strong> ${data.bullets_detected}</p>
+                    <p><strong>Accuracy:</strong> ${(data.accuracy * 100).toFixed(2)}%</p>
+                `;
+                modal.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Erreur lors de la récupération des détails de la session:', error);
+            });
+    }
+});
+
+closeModal.addEventListener('click', function() {
+    modal.style.display = 'none';
+});
+
+window.addEventListener('click', function(event) {
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

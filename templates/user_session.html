@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="panel">
+    <h2>Session de Tir - {{ full_name }}</h2>
+    
+    <div class="detection-interface">
+        <!-- Formulaire de démarrage -->
+        <form id="start-form" class="form-group">
+            <label>Nombre de balles à tirer</label>
+            <input type="number" id="bullets_shot" name="bullets_shot" min="1" required>
+            <button type="submit" class="btn btn-primary">Démarrer la session</button>
+        </form>
+        
+        <!-- Interface de détection (masquée au début) -->
+        <div id="detection-area" style="display:none;">
+            <div class="video-container">
+                <img id="video-feed" src="">
+            </div>
+            <div class="detection-stats">
+                <p>Balles tirées: <span id="shot-count">0</span></p>
+                <p>Impacts détectés: <span id="detected-count">0</span></p>
+            </div>
+            <button id="stop-btn" class="btn btn-danger">Terminer la session</button>
+        </div>
+        
+        <!-- Résultats (masqués au début) -->
+        <div id="results-area" style="display:none;">
+            <div class="result-card">
+                <h3>Résultats finaux</h3>
+                <p>Balles tirées: <strong id="final-shot">0</strong></p>
+                <p>Impacts détectés: <strong id="final-detected">0</strong></p>
+                <p>Précision: <strong id="final-accuracy">0%</strong></p>
+            </div>
+            <a href="{{ url_for('user_session') }}" class="btn">Nouvelle session</a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startForm = document.getElementById('start-form');
+    const detectionArea = document.getElementById('detection-area');
+    const resultsArea = document.getElementById('results-area');
+    const videoFeed = document.getElementById('video-feed');
+    
+    // Démarrer la session
+    startForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const bulletsShot = parseInt(document.getElementById('bullets_shot').value);
+        
+        fetch("{{ url_for('start_detection') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                bullets_shot: bulletsShot
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                startForm.style.display = 'none';
+                detectionArea.style.display = 'block';
+                videoFeed.src = "{{ url_for('video_feed') }}";
+                
+                // Mettre à jour le compteur
+                document.getElementById('shot-count').textContent = bulletsShot;
+            }
+        });
+    });
+    
+    // Arrêter la session
+    document.getElementById('stop-btn').addEventListener('click', function() {
+        fetch("{{ url_for('stop_detection') }}", {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                detectionArea.style.display = 'none';
+                resultsArea.style.display = 'block';
+                
+                // Afficher les résultats finaux
+                const bulletsShot = parseInt(document.getElementById('bullets_shot').value);
+                const detected = data.bullets_detected;
+                const accuracy = (detected / bulletsShot * 100).toFixed(2);
+                
+                document.getElementById('final-shot').textContent = bulletsShot;
+                document.getElementById('final-detected').textContent = detected;
+                document.getElementById('final-accuracy').textContent = accuracy + '%';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
