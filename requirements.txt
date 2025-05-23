@@ -2,8 +2,8 @@ Flask==2.3.3
 psycopg2-binary==2.9.7
 python-dotenv==1.0.0
 opencv-python-headless==4.8.1.78
-torch==2.0.1
-torchvision==0.15.2
+torch
+torchvision
 ultralytics==8.0.196
 numpy==1.24.3
 Pillow==10.0.1
